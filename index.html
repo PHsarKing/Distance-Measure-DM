@@ -1,0 +1,170 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distance Measure with Map</title>  <!-- Leaflet CSS -->  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 100vh;
+    }
+    #map {
+      height: 100vh;
+    }
+    .panel {
+      padding: 24px;
+      background: #020617;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: none;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+      background: #38bdf8;
+      color: #020617;
+      font-weight: bold;
+    }
+    .secondary {
+      background: #64748b;
+      color: white;
+    }
+    .result {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 18px;
+    }
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      #map {
+        height: 50vh;
+      }
+    }
+  </style></head>
+<body><div class="container">
+  <div id="map"></div>  <div class="panel">
+    <h1>Distance Measure</h1><label>Latitude 1</label>
+<input id="lat1" type="number" step="any" />
+
+<label>Longitude 1</label>
+<input id="lon1" type="number" step="any" />
+
+<label>Latitude 2</label>
+<input id="lat2" type="number" step="any" />
+
+<label>Longitude 2</label>
+<input id="lon2" type="number" step="any" />
+
+<label>Unit</label>
+<select id="unit">
+  <option value="km">Kilometers</option>
+  <option value="miles">Miles</option>
+</select>
+
+<button onclick="calculateDistance()">Calculate Distance</button>
+<button class="secondary" onclick="useMyLocation()">Use My Current Location</button>
+
+<div class="result" id="result"></div>
+
+  </div>
+</div><!-- Leaflet JS --><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+  const map = L.map('map').setView([16.8, 96.15], 6);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  let markers = [];
+
+  map.on('click', function (e) {
+    if (markers.length === 2) {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+    }
+
+    const marker = L.marker(e.latlng).addTo(map);
+    markers.push(marker);
+
+    if (markers.length === 1) {
+      document.getElementById('lat1').value = e.latlng.lat.toFixed(6);
+      document.getElementById('lon1').value = e.latlng.lng.toFixed(6);
+    } else if (markers.length === 2) {
+      document.getElementById('lat2').value = e.latlng.lat.toFixed(6);
+      document.getElementById('lon2').value = e.latlng.lng.toFixed(6);
+    }
+  });
+
+  function useMyLocation() {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(position => {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      document.getElementById('lat1').value = lat.toFixed(6);
+      document.getElementById('lon1').value = lon.toFixed(6);
+
+      const marker = L.marker([lat, lon]).addTo(map);
+      markers.push(marker);
+      map.setView([lat, lon], 13);
+    });
+  }
+
+  function calculateDistance() {
+    const lat1 = parseFloat(document.getElementById('lat1').value);
+    const lon1 = parseFloat(document.getElementById('lon1').value);
+    const lat2 = parseFloat(document.getElementById('lat2').value);
+    const lon2 = parseFloat(document.getElementById('lon2').value);
+    const unit = document.getElementById('unit').value;
+
+    if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+      document.getElementById('result').innerText = 'Please select two points.';
+      return;
+    }
+
+    const R = unit === 'km' ? 6371 : 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    document.getElementById('result').innerText =
+      `Distance: ${distance.toFixed(2)} ${unit === 'km' ? 'km' : 'miles'}`;
+  }
+</script></body>
+</html>
