@@ -89,9 +89,14 @@
 </select>
 
 <button onclick="calculateDistance()">Calculate Distance</button>
+<button class="secondary" onclick="shareResult()">Share Result</button>
 <button class="secondary" onclick="useMyLocation()">Use My Current Location</button>
 
 <div class="result" id="result"></div>
+
+<p style="text-align:center; margin-top:20px; font-size:13px; opacity:0.6;">
+  Built by <strong>Psalm Hsar Kalu Thaw</strong>
+</p>
 
   </div>
 </div><!-- Leaflet JS --><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
@@ -151,6 +156,54 @@
       document.getElementById('result').innerText = 'Please select two points.';
       return;
     }
+
+    const R = unit === 'km' ? 6371 : 3958.8;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) ** 2;
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+
+    window.lastResult = {
+      lat1, lon1, lat2, lon2,
+      distance: distance.toFixed(2),
+      unit
+    };
+
+    document.getElementById('result').innerText =
+      `Distance: ${distance.toFixed(2)} ${unit === 'km' ? 'km' : 'miles'}`;
+  }
+
+  function shareResult() {
+    if (!window.lastResult) {
+      alert('Please calculate distance first');
+      return;
+    }
+
+    const r = window.lastResult;
+    const text = `📍 Distance Measure Result
+
+Location A: (${r.lat1}, ${r.lon1})
+Location B: (${r.lat2}, ${r.lon2})
+
+📏 Distance: ${r.distance} ${r.unit}
+
+Built by Psalm Hsar Kalu Thaw`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: 'Distance Measure Result',
+        text: text
+      });
+    } else {
+      navigator.clipboard.writeText(text);
+      alert('Result copied to clipboard!');
+    }
+  }
 
     const R = unit === 'km' ? 6371 : 3958.8;
     const dLat = (lat2 - lat1) * Math.PI / 180;
